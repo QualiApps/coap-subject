@@ -31,7 +31,7 @@ func ProcessRequest(l *net.UDPConn, request Request) {
 		route, observable := checkRoute(path)
 		switch path {
 		case resources.WellKnown:
-			go Discovery(l, request.FromAddr, &rv)
+			Discovery(l, request.FromAddr, &rv)
 		case route:
 			if rv.IsObservable() {
 				msg := NewMessage(coap.NonConfirmable, coap.Content, utils.GenMessageID(), rv.Token, []byte(""))

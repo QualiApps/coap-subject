@@ -95,5 +95,5 @@ func Discovery(l *net.UDPConn, from *net.UDPAddr, m *coap.Message) {
 	msg.SetOption(coap.ContentFormat, coap.AppLinkFormat)
 	msg.SetOption(coap.LocationPath, m.Path())
 
-	Send(l, from, *msg)
+	go Send(l, from, *msg)
 }
