@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "github.com/dustin/go-coap"
+	"net"
 )
 
 const (
@@ -14,53 +14,65 @@ type (
 		Net     string
 		Address string
 	}
-	observableList map[string][]*Observation
+	obsList map[string][]*Observation
 )
 
-func NewObservation(addr *net.UDPAddr, token string, resource string) *Observation {
+var observableList = make(obsList)
+
+func NewObservation(addr *net.UDPAddr, format interface{}, token, resource string) *Observation {
 	return &Observation{
-		Addr:        addr,
-		Token:       token,
-		Resource:    resource,
-		NotifyCount: 0,
+		Addr:          addr,
+		Token:         token,
+		Resource:      resource,
+		ContentFormat: format,
+		NotifyCount:   0,
 	}
 }
 
 type Observation struct {
-	Addr        *net.UDPAddr
-	Token       string
-	Resource    string
-	NotifyCount int
+	Addr          *net.UDPAddr
+	Token         string
+	Resource      string
+	ContentFormat interface{}
+	NotifyCount   int
 }
 
-func AddObservation(resource, token string, addr *net.UDPAddr) {
-	observableList[resource] = append(observableList[resource], NewObservation(addr, token, resource))
+func AddObservation(resource, token string, addr *net.UDPAddr, format interface{}) {
+	observableList[resource] = append(observableList[resource], NewObservation(addr, format, token, resource))
+}
+
+func UpdateObservation(resource, token string, addr *net.UDPAddr, format interface{}) {
+	if obs, ok := observableList[resource]; ok {
+		for i, o := range obs {
+			if o.Addr.String() == addr.String() {
+				observableList[resource][i].Token = token
+				observableList[resource][i].ContentFormat = format
+				break
+			}
+		}
+	}
 }
 
 func HasObservation(resource string, addr *net.UDPAddr) bool {
-	obs := observableList[resource]
-	if obs == nil {
-		return false
-	}
-
-	for _, o := range obs {
-		if o.Addr.String() == addr.String() {
-			return true
+	hasItem := false
+	if obs, ok := observableList[resource]; ok {
+		for _, o := range obs {
+			if o.Addr.String() == addr.String() {
+				hasItem = true
+				break
+			}
 		}
 	}
-	return false
+	return hasItem
 }
 
 func RemoveObservation(resource string, addr *net.UDPAddr) {
-	obs := observableList[resource]
-	if obs == nil {
-		return
-	}
-
-	for i, o := range obs {
-		if o.Addr.String() == addr.String() {
-			observableList[resource] = append(obs[:i], obs[i+1:]...)
-			return
+	if obs, ok := observableList[resource]; ok {
+		for i, o := range obs {
+			if o.Addr.String() == addr.String() {
+				observableList[resource] = append(obs[:i], obs[i+1:]...)
+				break
+			}
 		}
 	}
 }

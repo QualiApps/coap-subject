@@ -3,14 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	_ "github.com/dustin/go-coap"
+	"github.com/dustin/go-coap"
 	"github.com/qualiapps/subject/resources"
 	"log"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
-	_ "time"
 )
 
 var (
@@ -56,17 +55,38 @@ func main() {
 		case res := <-register:
 			log.Printf("OK.........Resource %s was added.\n", res.Name)
 		case name := <-deregister:
-			log.Printf("OK.........Resource %s was deleted.\n", name)
+			or := observableList[name]
+			SendDeregister(l, name, or)
 		case resource := <-event:
 			log.Printf("Event... %#v\n", resource)
+			or := observableList[resource.Name]
+			if or != nil {
+				for _, r := range or {
+					SendNotification(l, r, coap.Content, resource.Payload)
+				}
+			}
 		case request := <-handler:
 			go ProcessRequest(l, request)
 			// terminate app
 		case <-exit:
 			go func() {
-				log.Printf("Terminate...")
+				for route, or := range observableList {
+					SendDeregister(l, route, or)
+				}
+				log.Printf("OK.........Terminated")
 				os.Exit(0)
 			}()
 		}
 	}
+}
+
+func SendDeregister(l *net.UDPConn, route string, or []*Observation) {
+	if or != nil {
+		for _, r := range or {
+			SendNotification(l, r, coap.NotFound, "")
+		}
+		log.Printf("OK.........Resource %s was deleted.\n", route)
+		delete(observableList, route)
+	}
+
 }

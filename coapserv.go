@@ -5,8 +5,11 @@ import (
 	_ "encoding/json"
 	"github.com/dustin/go-coap"
 	"github.com/qualiapps/subject/resources"
+	"github.com/qualiapps/subject/utils"
+
 	"log"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -46,13 +49,36 @@ func ServCoap(listener chan *net.UDPConn, handler chan Request, conStr HostPort)
 
 }
 
-func SendAck(l *net.UDPConn, from *net.UDPAddr, mid uint16) error {
+func SendNotification(l *net.UDPConn, r *Observation, code coap.COAPCode, payload string) {
+	msg := NewMessage(coap.NonConfirmable, code, utils.GenMessageID(), []byte(r.Token), []byte(payload))
+
+	msg.SetOption(coap.LocationPath, strings.Split(r.Resource, "/")[1:])
+
+	if r.ContentFormat != nil {
+		msg.SetOption(coap.ContentFormat, r.ContentFormat.(coap.MediaType))
+	}
+	r.NotifyCount++
+	msg.AddOption(coap.Observe, r.NotifyCount)
+
+	go Send(l, r.Addr, *msg)
+}
+
+func Send(l *net.UDPConn, addr *net.UDPAddr, request coap.Message) bool {
+	err := coap.Transmit(l, addr, request)
+	if err != nil {
+		log.Printf("Error on transmitter, stopping: %v", err)
+		return false
+	}
+	return true
+}
+
+func SendAck(l *net.UDPConn, from *net.UDPAddr, mid uint16) bool {
 	m := coap.Message{
 		Type:      coap.Acknowledgement,
 		Code:      0,
 		MessageID: mid,
 	}
-	return coap.Transmit(l, from, m)
+	return Send(l, from, m)
 }
 
 func Discovery(l *net.UDPConn, from *net.UDPAddr, m *coap.Message) {
@@ -65,20 +91,9 @@ func Discovery(l *net.UDPConn, from *net.UDPAddr, m *coap.Message) {
 		buf.WriteString(",")
 	}
 
-	msg := coap.Message{
-		Type:      coap.Acknowledgement,
-		Code:      coap.Content,
-		MessageID: m.MessageID,
-		Token:     m.Token,
-		Payload:   []byte(buf.String()),
-	}
-
+	msg := NewMessage(coap.Acknowledgement, coap.Content, m.MessageID, m.Token, []byte(buf.String()))
 	msg.SetOption(coap.ContentFormat, coap.AppLinkFormat)
 	msg.SetOption(coap.LocationPath, m.Path())
 
-	err := coap.Transmit(l, from, msg)
-	if err != nil {
-		log.Printf("Error on transmitter, stopping: %v", err)
-		return
-	}
+	Send(l, from, *msg)
 }
