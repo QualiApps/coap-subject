@@ -38,6 +38,13 @@ func GetByName(name string) (Resource, bool) {
 	return Resource{}, false
 }
 
+func CheckRoute(path string) (string, bool) {
+	if res, ok := GetByName(path); ok {
+		return res.Name, res.Observable
+	}
+	return "", false
+}
+
 // Adds a new resource
 // @param string name - res name
 // @param bool editable - editable flag
