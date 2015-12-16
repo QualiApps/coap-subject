@@ -55,10 +55,11 @@ func main() {
 		case res := <-register:
 			log.Printf("OK.........Resource %s was added.\n", res.Name)
 		case name := <-deregister:
+			log.Printf("OK.........Resource %s was deleted.\n", name)
 			or := observableList[name]
 			SendDeregister(l, name, or)
 		case resource := <-event:
-			log.Printf("Event... %#v\n", resource)
+			log.Printf("OK.........Incoming Event %s\n", resource.Name)
 			or := observableList[resource.Name]
 			if or != nil {
 				for _, r := range or {
@@ -85,7 +86,7 @@ func SendDeregister(l *net.UDPConn, route string, or []*Observation) {
 		for _, r := range or {
 			SendNotification(l, r, coap.NotFound, "")
 		}
-		log.Printf("OK.........Resource %s was deleted.\n", route)
+		log.Printf("OK.........Observation %s was deleted.\n", route)
 		delete(observableList, route)
 	}
 
