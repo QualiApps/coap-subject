@@ -16,10 +16,9 @@ type Request struct {
 }
 
 /**
- * Processing response
+ * Processing request
  * @param *net.UDPConn l - connection instance
- * @param dbClient - db instance
- * @param Response response - res data
+ * @param Request request - res data
  */
 func ProcessRequest(l *net.UDPConn, request Request) {
 	// parse to CoAP struct
@@ -33,6 +32,7 @@ func ProcessRequest(l *net.UDPConn, request Request) {
 		case resources.WellKnown:
 			Discovery(l, request.FromAddr, &rv)
 		case route:
+			// if observe option
 			if rv.IsObservable() {
 				msg := NewMessage(coap.NonConfirmable, coap.Content, utils.GenMessageID(), rv.Token, []byte(""))
 
@@ -42,8 +42,11 @@ func ProcessRequest(l *net.UDPConn, request Request) {
 					msg.SetOption(coap.ContentFormat, format)
 				}
 
+				// retrieves observe value
 				observe := rv.Option(coap.Observe).(uint32)
+				// observe = 0, register request
 				if observe == 0 {
+					// if resource is observable
 					if observable {
 						if !HasObservation(route, request.FromAddr) {
 							AddObservation(route, string(rv.Token), request.FromAddr, format)

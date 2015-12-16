@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	_ "encoding/json"
 	"github.com/dustin/go-coap"
 	"github.com/qualiapps/subject/resources"
 	"github.com/qualiapps/subject/utils"

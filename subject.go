@@ -49,15 +49,20 @@ func main() {
 	fmt.Printf("CoAP server was started ... OK\n")
 	fmt.Printf("Config server :%s\n", *ConfigPort)
 	fmt.Printf("CoAP server :%s\n", *CoapPort)
+
 	l := <-listener
+
 	for {
 		select {
+		// register resource
 		case res := <-register:
 			log.Printf("OK.........Resource %s was added.\n", res.Name)
+		// remove resource
 		case name := <-deregister:
 			log.Printf("OK.........Resource %s was deleted.\n", name)
 			or := observableList[name]
 			SendDeregister(l, name, or)
+		// change resource
 		case resource := <-event:
 			log.Printf("OK.........Incoming Event %s\n", resource.Name)
 			or := observableList[resource.Name]
@@ -66,9 +71,10 @@ func main() {
 					SendNotification(l, r, coap.Content, resource.Payload)
 				}
 			}
+		// incoming handler
 		case request := <-handler:
 			go ProcessRequest(l, request)
-			// terminate app
+		// terminate app
 		case <-exit:
 			go func() {
 				for route, or := range observableList {

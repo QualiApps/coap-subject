@@ -25,10 +25,8 @@ func init() {
 	AddResource(WellKnown, false, false)
 }
 
-/**
- * Retrieves all resources
- * @return - returns Resources reference
- */
+// Retrieves all resources
+// @return - returns Resources reference
 func GetAll() *Res {
 	return &Resources
 }
@@ -40,9 +38,10 @@ func GetByName(name string) (Resource, bool) {
 	return Resource{}, false
 }
 
-// Adds a new client
-// @param io.Reader params - json
-// @return ([]byte, bool)
+// Adds a new resource
+// @param string name - res name
+// @param bool editable - editable flag
+// @return (*Resource, bool)
 func AddResource(name string, observable, editable bool) (*Resource, bool) {
 	if !utils.IsEmpty(name) && !HasResource(name) {
 		r := Resource{Name: name, Observable: observable, Editable: editable}
@@ -52,8 +51,8 @@ func AddResource(name string, observable, editable bool) (*Resource, bool) {
 	return nil, false
 }
 
-// Removes the client by Id
-// @param string id - md5 hash of host:port
+// Removes resource by name
+// @param string name - res name
 // @return string, bool
 func DeleteResource(name string) (string, bool) {
 	if HasResource(name) && IsEditable(name) {
@@ -70,11 +69,9 @@ func IsEditable(name string) bool {
 	return false
 }
 
-/**
-* Checks an item
- * @param string id - client id
-  * @return Confug, bool
-*/
+// Checks an item
+// @param string name - res name
+// @return bool
 func HasResource(name string) bool {
 	if _, ok := Resources[name]; ok {
 		return true

@@ -9,10 +9,8 @@ import (
 	"log"
 )
 
-/**
- * Retrieves all clients
- * @return - returns bytes array
- */
+// Retrieves all resources
+// @return - returns bytes array
 func GetAllResources() []byte {
 	res, err := json.Marshal(resources.GetAll())
 	if err != nil {
@@ -22,11 +20,10 @@ func GetAllResources() []byte {
 	return res
 }
 
-/**
- * Adds a new client
- * @param io.Reader params - json
- * @return ([]byte, bool)
- */
+// Adds a new resource
+// @param string name - res name
+// @param bool observable
+// @return (*Resource, []byte, bool)
 func AddResource(name string, observable bool) (*resources.Resource, []byte, bool) {
 	if res, ok := resources.AddResource(name, observable, true); ok {
 		resp, err := json.Marshal(res)
@@ -51,11 +48,9 @@ func InitEvent(name string, payload io.Reader) (*resources.Resource, bool) {
 	return nil, false
 }
 
-/**
- * Removes the client by Id
- * @param string id - md5 hash of host:port
- * @return bool
- */
+// Removes resource by name
+// @param string name - res name
+// @return bool
 func DeleteResource(name string) (string, bool) {
 	return resources.DeleteResource(name)
 }

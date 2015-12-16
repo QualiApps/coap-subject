@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	_ "encoding/json"
 	"fmt"
 	"github.com/julienschmidt/httprouter"
 	"github.com/qualiapps/subject/models"

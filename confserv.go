@@ -1,7 +1,6 @@
 package main
 
 import (
-	_ "encoding/json"
 	"github.com/julienschmidt/httprouter"
 	"github.com/qualiapps/subject/controllers"
 	"github.com/qualiapps/subject/resources"
