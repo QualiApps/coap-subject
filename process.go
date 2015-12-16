@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type Request struct {
+type Handle struct {
 	Data     []byte
 	FromAddr *net.UDPAddr
 }
@@ -20,17 +20,17 @@ type Request struct {
  * @param *net.UDPConn l - connection instance
  * @param Request request - res data
  */
-func ProcessRequest(l *net.UDPConn, request Request) {
+func (c *CoapServer) ProcessData(h Handle) {
 	// parse to CoAP struct
 	rv := coap.Message{}
-	err := rv.UnmarshalBinary(request.Data)
+	err := rv.UnmarshalBinary(h.Data)
 
 	if err == nil {
 		path := string(os.PathSeparator) + strings.Join(rv.Path(), string(os.PathSeparator))
-		route, observable := checkRoute(path)
+		route, observable := resources.CheckRoute(path)
 		switch path {
 		case resources.WellKnown:
-			Discovery(l, request.FromAddr, &rv)
+			c.Discovery(h.FromAddr, &rv)
 		case route:
 			// if observe option
 			if rv.IsObservable() {
@@ -48,39 +48,32 @@ func ProcessRequest(l *net.UDPConn, request Request) {
 				if observe == 0 {
 					// if resource is observable
 					if observable {
-						if !HasObservation(route, request.FromAddr) {
-							AddObservation(route, string(rv.Token), request.FromAddr, format)
-							log.Printf("Register observing: %s\n", route)
+						if !c.HasObservation(route, h.FromAddr) {
+							c.AddObservation(route, string(rv.Token), h.FromAddr, format)
+							log.Printf("Register observing: name-%s addr-%s\n", route, h.FromAddr.String())
 						} else {
-							UpdateObservation(route, string(rv.Token), request.FromAddr, format)
+							c.UpdateObservation(route, string(rv.Token), h.FromAddr, format)
 							log.Printf("Update observing: %s\n", route)
 						}
 						msg.AddOption(coap.Observe, 1)
 					}
 				} else if observe == 1 {
-					RemoveObservation(route, request.FromAddr)
-					log.Printf("Remove observing: %s\n", route)
+					c.RemoveObservation(route, h.FromAddr)
+					log.Printf("Remove observing: name-%s addr-%s\n", route, h.FromAddr.String())
 				}
 				// Send response (with or not Observe option)
-				Send(l, request.FromAddr, *msg)
+				c.Send(h.FromAddr, *msg)
 			} else {
 				// NOT IMPLEMENTED
 				rv.Code = coap.NotImplemented
 				rv.Type = coap.Acknowledgement
-				Send(l, request.FromAddr, rv)
+				c.Send(h.FromAddr, rv)
 			}
 		default:
 			// Route NOT FOUND
 			rv.Code = coap.NotFound
 			rv.Type = coap.Acknowledgement
-			Send(l, request.FromAddr, rv)
+			c.Send(h.FromAddr, rv)
 		}
 	}
-}
-
-func checkRoute(path string) (string, bool) {
-	if res, ok := resources.GetByName(path); ok {
-		return res.Name, res.Observable
-	}
-	return "", false
 }
