@@ -11,7 +11,7 @@ coap = CoapResource("http://localhost:8888")
 coap.add_resource("event", ("sensors", "event"))
 
 # send event
-coap.send_event("event", {"alert": "Message"})
+coap.send_event("event", {"alert": "Message", ...})
 
 # delete resource
 coap.remove_resource("event")
