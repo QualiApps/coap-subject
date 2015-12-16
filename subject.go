@@ -57,7 +57,7 @@ func main() {
 			coapServ.DeregisterResource(name)
 		// change resource
 		case resource := <-event:
-			log.Printf("OK.........Incoming Event %s\n", resource.Name)
+			log.Printf("OK.........Incoming Event %s\nPayload: %s\n", resource.Name, resource.Payload)
 			coapServ.Event(resource.Name, resource.Payload)
 		// terminate app
 		case <-exit:
